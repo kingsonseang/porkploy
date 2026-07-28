@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "paths": {
+      "#/*": ["./src/*"],
+      "@porkploy/auth/*": ["../../packages/auth/src/*"],
+      "@porkploy/db/*": ["../../packages/db/src/*"],
+      "@porkploy/github/*": ["../../packages/github/src/*"],
+      "@porkploy/infisical/*": ["../../packages/infisical/src/*"],
+      "@porkploy/nomad/*": ["../../packages/nomad/src/*"],
+      "@porkploy/trpc/*": ["../../packages/trpc/src/*"],
+      "@porkploy/types/*": ["../../packages/types/src/*"]
+    },
+    "types": ["bun"]
+  },
+  "include": ["src"]
+}

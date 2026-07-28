@@ -1,0 +1,24 @@
+{
+  "name": "@porkploy/trpc",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@paralleldrive/cuid2": "^2.2.2",
+    "@porkploy/db": "workspace:*",
+    "@trpc/server": "^11.4.3",
+    "drizzle-orm": "^0.45.2",
+    "effect": "^3.22.0",
+    "superjson": "^2.2.6",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

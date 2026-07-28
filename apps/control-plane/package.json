@@ -1,0 +1,35 @@
+{
+  "name": "@porkploy/control-plane",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "start": "bun run dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@elysiajs/cors": "^1.3.3",
+    "@paralleldrive/cuid2": "^2.2.2",
+    "@porkploy/auth": "workspace:*",
+    "@porkploy/db": "workspace:*",
+    "@porkploy/github": "workspace:*",
+    "@porkploy/infisical": "workspace:*",
+    "@porkploy/nomad": "workspace:*",
+    "@porkploy/queue": "workspace:*",
+    "@porkploy/trpc": "workspace:*",
+    "@porkploy/types": "workspace:*",
+    "@trpc/server": "^11.4.3",
+    "drizzle-orm": "^0.45.2",
+    "effect": "^3.22.0",
+    "elysia": "^1.3.5",
+    "superjson": "^2.2.6",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "typescript": "^7.0.2"
+  }
+}

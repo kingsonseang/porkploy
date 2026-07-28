@@ -1,0 +1,22 @@
+{
+  "name": "@porkploy/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "dotenv -e ../../.env -- bun x auth@latest generate --config ./src/generate.ts --output ../db/src/schema/better-auth.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@better-auth/drizzle-adapter": "^1.6.25",
+    "@porkploy/db": "workspace:*",
+    "better-auth": "^1.6.25"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^11.0.0",
+    "typescript": "^7.0.2"
+  }
+}

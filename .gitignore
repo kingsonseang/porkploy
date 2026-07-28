@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.yarn/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Turbo
+.turbo/
+
+# Coverage
+coverage/
+*.lcov
+
+# Environment — never commit real values
+.env
+.env.local
+.env.*.local
+# .env.example is intentionally committed (it has no real values)
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Bun
+bun.lockb
+
+# Changesets — committed files are config.json and README.md only
+# .changeset/*.md
+!.changeset/config.json
+!.changeset/README.md
+
+# Test artifacts
+test-results/
+
+# Husky
+.husky/_/
+
+# Bun cache
+~
+
+# fumadocs code gen
+.source
+src/pages.gen.ts

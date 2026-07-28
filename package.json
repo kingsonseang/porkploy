@@ -1,0 +1,42 @@
+{
+  "name": "porkploy",
+  "description": "A lightweight self-hosted deployment platform inspired by Render, Dokploy, Railway, and Coolify, designed for low-end hardware.",
+  "version": "0.0.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch",
+    "lint": "ultracite check .",
+    "lint:fix": "ultracite fix .",
+    "format": "biome format . --write",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "commit": "czg",
+    "check": "ultracite check",
+    "fix": "ultracite fix",
+    "prepare": "lefthook install"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.3",
+    "@commitlint/cli": "^21.0.1",
+    "@commitlint/config-conventional": "^21.0.1",
+    "@commitlint/types": "^21.0.1",
+    "@types/bun": "latest",
+    "@types/node": "^26.1.1",
+    "czg": "^1.13.1",
+    "lefthook": "^2.1.10",
+    "turbo": "^2.10.7",
+    "typescript": "^7.0.2",
+    "ultracite": "7.9.4"
+  },
+  "engines": {
+    "bun": ">=1.1.0",
+    "node": ">=20.0.0"
+  },
+  "packageManager": "bun@1.3.5",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

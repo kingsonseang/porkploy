@@ -1,0 +1,19 @@
+{
+  "name": "@porkploy/github",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@porkploy/types": "workspace:*",
+    "effect": "^3.16.8"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

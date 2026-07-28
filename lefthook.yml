@@ -1,0 +1,25 @@
+pre-commit:
+  jobs:
+    - run: bun x ultracite fix
+      glob:
+        - "**/*.js"
+        - "**/*.jsx"
+        - "**/*.ts"
+        - "**/*.tsx"
+        - "**/*.json"
+        - "**/*.jsonc"
+        - "**/*.css"
+      stage_fixed: true
+
+prepare-commit-msg:
+  commands:
+    commitizen:
+      interactive: true
+      run: bun commit --hook
+      env:
+        LEFTHOOK: "0"
+
+commit-msg:
+  commands:
+    commitlint:
+      run: bun commitlint --edit {1}

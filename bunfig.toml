@@ -1,0 +1,16 @@
+[install]
+exact = false
+hoist = true
+
+[install.cache]
+dir = "~/.bun/install/cache"
+disable = false
+disableManifest = false
+
+[test]
+timeout = 10000
+coverage = false
+conditions = ["development", "module", "import", "default"]
+
+[run]
+bun = true
