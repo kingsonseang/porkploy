@@ -64,8 +64,8 @@ export const InfisicalLive = Layer.effect(
   Infisical,
   Effect.gen(function* () {
     // Platform-level machine identity (for managing workspace projects)
-    const platformClientId = process.env.INFISICAL_CLIENT_ID;
-    const platformClientSecret = process.env.INFISICAL_CLIENT_SECRET;
+    const platformClientId = Bun.env.INFISICAL_CLIENT_ID;
+    const platformClientSecret = Bun.env.INFISICAL_CLIENT_SECRET;
 
     const getToken = (clientId: string, clientSecret: string) =>
       Effect.tryPromise({

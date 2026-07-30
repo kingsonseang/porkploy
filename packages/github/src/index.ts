@@ -114,9 +114,9 @@ async function generateAppJwt(
 export const GitHubLive = Layer.effect(
   GitHub,
   Effect.gen(function* () {
-    const appId = process.env.GITHUB_APP_ID ?? "";
-    const privateKey = process.env.GITHUB_APP_PRIVATE_KEY ?? "";
-    const webhookSecret = process.env.GITHUB_WEBHOOK_SECRET ?? "";
+    const appId = Bun.env.GITHUB_APP_ID ?? "";
+    const privateKey = Bun.env.GITHUB_APP_PRIVATE_KEY ?? "";
+    const webhookSecret = Bun.env.GITHUB_WEBHOOK_SECRET ?? "";
 
     const request = <T>(
       method: string,

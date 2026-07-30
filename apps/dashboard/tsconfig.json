@@ -30,7 +30,8 @@
       "DOM.Iterable"
     ],
     "types": [
-      "vite/client"
+      "vite/client",
+      "bun-types"
     ],
     /* Bundler mode */
     "moduleResolution": "bundler",

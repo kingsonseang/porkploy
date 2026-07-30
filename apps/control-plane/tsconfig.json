@@ -13,7 +13,7 @@
       "@porkploy/trpc/*": ["../../packages/trpc/src/*"],
       "@porkploy/types/*": ["../../packages/types/src/*"]
     },
-    "types": ["bun"]
+    "types": ["bun-types"]
   },
   "include": ["src"]
 }

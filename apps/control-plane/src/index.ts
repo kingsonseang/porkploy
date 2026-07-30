@@ -6,13 +6,13 @@ import { betterAuth } from "./lib/auth";
 import { createContext } from "./lib/context";
 import { webhookHandler } from "./routers/webhooks";
 
-const PORT = Number(process.env.PORT ?? 3001);
+const PORT = Number(Bun.env.PORT ?? 3001);
 
 export const app = new Elysia()
   .use(
     cors({
       credentials: true,
-      origin: process.env.DASHBOARD_URL ?? "http://localhost:3000",
+      origin: Bun.env.DASHBOARD_URL ?? "http://localhost:3000",
     })
   )
   .use(betterAuth)

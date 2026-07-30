@@ -141,8 +141,8 @@ export class Nomad extends Context.Tag("Nomad")<Nomad, NomadClient>() {}
 export const NomadLive = Layer.effect(
   Nomad,
   Effect.gen(function* () {
-    const addr = process.env.NOMAD_ADDR ?? "http://127.0.0.1:4646";
-    const token = process.env.NOMAD_TOKEN;
+    const addr = Bun.env.NOMAD_ADDR ?? "http://127.0.0.1:4646";
+    const token = Bun.env.NOMAD_TOKEN;
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",

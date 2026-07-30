@@ -14,7 +14,7 @@ import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 
 const GHCR_REGISTRY = "ghcr.io";
-const GHCR_ORG = process.env.GHCR_ORG ?? "porkploy";
+const GHCR_ORG = Bun.env.GHCR_ORG ?? "porkploy";
 
 // ─── Main deploy trigger ──────────────────────────────────────────────────────
 
@@ -167,8 +167,8 @@ export const runBuild = (job: BuildJob) =>
 
     const buildProc = Bun.spawn(buildArgs, {
       env: {
-        ...process.env,
-        BUILDKIT_HOST: process.env.BUILDKIT_ADDR ?? "tcp://127.0.0.1:8372",
+        ...Bun.env,
+        BUILDKIT_HOST: Bun.env.BUILDKIT_ADDR ?? "tcp://127.0.0.1:8372",
       },
       stderr: "pipe",
       stdout: "pipe",

@@ -1,3 +1,0 @@
-[test]
-# Resolve workspace packages to source during tests (no build step needed)
-conditions = ["development", "module", "import", "default"]
