@@ -69,10 +69,9 @@ export const BuildQueueLive = (
       return {
         depth: () => Queue.size(queue),
         enqueue: (job) =>
-          Effect.tryPromise({
-            catch: (e) => new QueueError({ message: String(e) }),
-            try: () => Queue.offer(queue, job) as unknown as Promise<void>,
-          }),
+          Effect.catchAll(Queue.offer(queue, job), (e) =>
+            Effect.fail(new QueueError({ message: String(e) }))
+          ),
 
         running: () => Effect.succeed(runningCount),
       };

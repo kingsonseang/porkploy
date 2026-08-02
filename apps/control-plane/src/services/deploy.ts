@@ -43,6 +43,13 @@ export const triggerDeploy = (opts: TriggerDeployOptions) =>
 
     const imageTag = `${GHCR_REGISTRY}/${GHCR_ORG}/${service.repoName}:${opts.commitSha}`;
 
+    console.log("inserting build with", {
+      branch: opts.branch,
+      commitSha: opts.commitSha,
+      environmentId: opts.environmentId,
+      serviceId: opts.serviceId,
+    });
+
     // Create build row
     const [build] = yield* Effect.promise(() =>
       db
@@ -60,21 +67,28 @@ export const triggerDeploy = (opts: TriggerDeployOptions) =>
         .returning()
     );
 
+    console.log("build inserted", build?.id);
+
     if (!build) {
       return yield* Effect.fail(new Error("Failed to create build"));
     }
 
     // Update GitHub commit status
     if (service.repoOwner && service.repoName) {
-      yield* github.createCommitStatus({
-        context: "spark/deploy",
-        description: "Build queued",
-        installationId: opts.installationId,
-        owner: service.repoOwner,
-        repo: service.repoName,
-        sha: opts.commitSha,
-        state: "pending",
-      });
+      try {
+        yield* github.createCommitStatus({
+          context: "porkploy/deploy",
+          description: "Build queued",
+          installationId: opts.installationId,
+          owner: service.repoOwner,
+          repo: service.repoName,
+          sha: opts.commitSha,
+          state: "pending",
+        });
+      } catch (e) {
+        console.error("commit status error", e);
+        // Don't fail the whole deploy for this
+      }
     }
 
     const job: BuildJob = {

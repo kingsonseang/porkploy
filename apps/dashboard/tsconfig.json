@@ -14,14 +14,14 @@
       "@/*": [
         "./src/*"
       ],
-      "@porkploy/auth": [
-        "../../packages/auth/*"
+      "@porkploy/auth/*": [
+        "../../packages/auth/src/*"
       ],
-      "@porkploy/trpc": [
-        "../../packages/trpc/*"
+      "@porkploy/trpc/*": [
+        "../../packages/trpc/src/*"
       ],
-      "@porkploy/types": [
-        "../../packages/types/*"
+      "@porkploy/types/*": [
+        "../../packages/types/src/*"
       ]
     },
     "lib": [

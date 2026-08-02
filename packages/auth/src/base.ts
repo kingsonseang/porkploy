@@ -11,6 +11,8 @@ if (!Bun.env.BETTER_AUTH_SECRET) {
 type BetterAuthOptions = Parameters<typeof betterAuth>[0];
 type BetterAuthPlugin = NonNullable<BetterAuthOptions["plugins"]>[number];
 
+const baseURL = Bun.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+
 /**
  * Base auth config shared between dashboard and control plane.
  * Framework-specific plugins (tanstackStartCookies, elysia, etc.)
@@ -18,7 +20,17 @@ type BetterAuthPlugin = NonNullable<BetterAuthOptions["plugins"]>[number];
  */
 export function baseAuth(plugins: BetterAuthPlugin[] = []) {
   return betterAuth({
-    baseURL: Bun.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+    advanced: {
+      crossSubdomainCookies: {
+        enabled: false,
+      },
+      defaultCookieAttributes: {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+    baseURL,
 
     database: drizzleAdapter(db, {
       provider: "pg",
@@ -106,8 +118,13 @@ export function baseAuth(plugins: BetterAuthPlugin[] = []) {
       github: {
         clientId: Bun.env.GITHUB_CLIENT_ID ?? "",
         clientSecret: Bun.env.GITHUB_CLIENT_SECRET ?? "",
+        mapProfileToUser: (profile) => ({
+          email: profile.email ?? `${profile.id}@github.placeholder.local`,
+          githubId: profile.id,
+        }),
       },
     },
+    trustedOrigins: [baseURL],
 
     user: {
       additionalFields: {

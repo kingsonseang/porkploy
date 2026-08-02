@@ -1,5 +1,7 @@
 /** biome-ignore-all lint/performance/useTopLevelRegex: ignore regex rules for this file */
-import { createHmac } from "node:crypto";
+// Bun supports PKCS#1 RSA keys natively via node:crypto
+import { createHmac, createSign } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { Context, Data, Effect, Layer } from "effect";
 
 // ─── Errors ───────────────────────────────────────────────────────────────────
@@ -75,38 +77,31 @@ export class GitHub extends Context.Tag("GitHub")<GitHub, GitHubClient>() {}
 
 // ─── JWT generator for GitHub App auth ───────────────────────────────────────
 
+// biome-ignore lint/suspicious/useAwait: ignore async/await
 async function generateAppJwt(
   appId: string,
   privateKey: string
 ): Promise<string> {
-  // GitHub App JWTs are RS256 — use Web Crypto API (available in Bun)
   const now = Math.floor(Date.now() / 1000);
-  const payload = { exp: now + 600, iat: now - 60, iss: appId };
+  const header = Buffer.from(
+    JSON.stringify({ alg: "RS256", typ: "JWT" })
+  ).toString("base64url");
+  const payload = Buffer.from(
+    JSON.stringify({
+      exp: now + 600,
+      iat: now - 60,
+      iss: appId,
+    })
+  ).toString("base64url");
 
-  const header = btoa(JSON.stringify({ alg: "RS256", typ: "JWT" }));
-  const body = btoa(JSON.stringify(payload));
-  const unsigned = `${header}.${body}`;
+  const unsigned = `${header}.${payload}`;
 
-  const keyData = privateKey
-    .replace(/-----BEGIN RSA PRIVATE KEY-----/, "")
-    .replace(/-----END RSA PRIVATE KEY-----/, "")
-    .replace(/\s/g, "");
+  const sign = createSign("RSA-SHA256");
+  sign.update(unsigned);
+  sign.end();
 
-  const key = await crypto.subtle.importKey(
-    "pkcs8",
-    Buffer.from(keyData, "base64"),
-    { hash: "SHA-256", name: "RSASSA-PKCS1-v1_5" },
-    false,
-    ["sign"]
-  );
-
-  const sig = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    key,
-    Buffer.from(unsigned)
-  );
-
-  return `${unsigned}.${Buffer.from(sig).toString("base64url")}`;
+  const signature = sign.sign(privateKey).toString("base64url");
+  return `${unsigned}.${signature}`;
 }
 
 // ─── Live implementation ──────────────────────────────────────────────────────
@@ -115,7 +110,9 @@ export const GitHubLive = Layer.effect(
   GitHub,
   Effect.gen(function* () {
     const appId = Bun.env.GITHUB_APP_ID ?? "";
-    const privateKey = Bun.env.GITHUB_APP_PRIVATE_KEY ?? "";
+    const privateKey = process.env.GITHUB_APP_PRIVATE_KEY_PATH
+      ? readFileSync(process.env.GITHUB_APP_PRIVATE_KEY_PATH, "utf-8")
+      : (process.env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, "\n") ?? "");
     const webhookSecret = Bun.env.GITHUB_WEBHOOK_SECRET ?? "";
 
     const request = <T>(

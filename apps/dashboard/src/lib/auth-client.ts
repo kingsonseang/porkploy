@@ -1,4 +1,4 @@
-import { ac, admin, member, owner } from "@porkploy/auth";
+import { ac, admin, member, owner } from "@porkploy/auth/permissions";
 import { organizationClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
