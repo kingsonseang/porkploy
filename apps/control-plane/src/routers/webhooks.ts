@@ -76,8 +76,14 @@ export async function webhookHandler({ request, set }: ElysiaContext) {
     const branch = payload.ref.replace("refs/heads/", "");
     console.log("push event", { branch, repo: payload.repository.full_name });
 
-    const service = await findServiceByRepo(payload.repository.full_name);
-    console.log("service found", service?.id ?? "none");
+    let service: Awaited<ReturnType<typeof findServiceByRepo>>;
+
+    try {
+      service = await findServiceByRepo(payload.repository.full_name);
+      console.log("service found", service?.id ?? "none");
+    } catch (error) {
+      console.error("findServiceByRepo failed", error);
+    }
 
     if (!service || service.repoBranch !== branch) {
       set.status = 200;
