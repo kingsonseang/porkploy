@@ -12,18 +12,28 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-// biome-ignore lint/performance/noBarrelFile: Auth + workspace tables owned by Better Auth — import, don't redefine
+// biome-ignore lint/performance/noBarrelFile: Auth + workspace tables owned by Better Auth — import, don't redefine and also ignore workspacesRelations from better auth and redefined here
 export {
   account,
+  accountRelations,
   invitation,
+  invitationRelations,
   session,
+  sessionRelations,
   users,
+  usersRelations,
   verification,
   workspace_members,
+  workspace_membersRelations,
   workspaces,
 } from "./better-auth";
 
-import { users, workspaces } from "./better-auth";
+import {
+  invitation,
+  users,
+  workspace_members,
+  workspaces,
+} from "./better-auth";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -374,4 +384,11 @@ export const auditLogRelations = relations(auditLogs, ({ one }) => ({
     fields: [auditLogs.workspaceId],
     references: [workspaces.id],
   }),
+}));
+
+export const workspacesRelations = relations(workspaces, ({ many }) => ({
+  invitations: many(invitation),
+  nodes: many(nodes),
+  projects: many(projects),
+  workspace_memberss: many(workspace_members),
 }));
