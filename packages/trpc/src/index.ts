@@ -92,13 +92,13 @@ const workspaceRouter = createTRPCRouter({
     .query(async ({ ctx, input }) =>
       ctx.db.query.workspaces.findFirst({
         where: eq(workspaces.slug, input.slug),
-        with: { members: true, projects: true },
+        with: { projects: true, workspace_memberss: true },
       })
     ),
   list: protectedProcedure.query(async ({ ctx }) =>
     ctx.db.query.workspace_members.findMany({
       where: eq(workspaceMembers.userId, ctx.session.userId),
-      with: { workspace: true },
+      with: { workspaces: true },
     })
   ),
 });

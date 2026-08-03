@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/style/noIncrementDecrement: allow incrementing attempts */
 import { createId } from "@paralleldrive/cuid2";
 import { db } from "@porkploy/db/client";
 import {
@@ -12,9 +13,12 @@ import { BuildQueueService } from "@porkploy/queue";
 import type { BuildJob } from "@porkploy/types";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
+import { runtime } from "../lib/context";
 
 const GHCR_REGISTRY = "ghcr.io";
 const GHCR_ORG = Bun.env.GHCR_ORG ?? "porkploy";
+const PLATFORM_DOMAIN =
+  Bun.env.PLATFORM_DOMAIN ?? "porkploy.kingsonseang.space";
 
 // ─── Main deploy trigger ──────────────────────────────────────────────────────
 
@@ -98,6 +102,7 @@ export const triggerDeploy = (opts: TriggerDeployOptions) =>
       dockerfilePath: service.dockerfilePath ?? undefined,
       environmentId: opts.environmentId,
       imageTag,
+      installationId: opts.installationId,
       repoCloneUrl: `https://github.com/${service.repoOwner}/${service.repoName}.git`,
       serviceId: opts.serviceId,
     };
@@ -111,8 +116,34 @@ export const triggerDeploy = (opts: TriggerDeployOptions) =>
 
 export const runBuild = (job: BuildJob) =>
   Effect.gen(function* () {
-    const _nomad = yield* Nomad;
-    const _github = yield* GitHub;
+    const github = yield* GitHub;
+
+    const service = yield* Effect.promise(() =>
+      db.query.services.findFirst({
+        where: eq(services.id, job.serviceId),
+      })
+    );
+
+    const updateCommitStatus = (
+      state: "pending" | "success" | "failure",
+      description: string
+    ): Effect.Effect<void, never> => {
+      if (!(service?.repoOwner && service?.repoName)) {
+        return Effect.void;
+      }
+      return Effect.catchAll(
+        github.createCommitStatus({
+          context: "porkploy/deploy",
+          description,
+          installationId: job.installationId,
+          owner: service.repoOwner,
+          repo: service.repoName,
+          sha: job.commitSha,
+          state,
+        }),
+        (e) => Effect.logError(`commit status failed: ${String(e)}`)
+      );
+    };
 
     // Mark build as running
     yield* Effect.promise(() =>
@@ -121,6 +152,7 @@ export const runBuild = (job: BuildJob) =>
         .set({ startedAt: new Date(), status: "running" })
         .where(eq(builds.id, job.buildId))
     );
+    yield* updateCommitStatus("pending", "Building...");
 
     // Clone repo
     const cloneDir = `/tmp/builds/${job.buildId}`;
@@ -136,7 +168,9 @@ export const runBuild = (job: BuildJob) =>
       ],
       { stderr: "pipe", stdout: "pipe" }
     );
+
     const cloneExit = yield* Effect.promise(() => cloneProc.exited);
+
     if (cloneExit !== 0) {
       yield* Effect.promise(() =>
         db
@@ -148,6 +182,7 @@ export const runBuild = (job: BuildJob) =>
           })
           .where(eq(builds.id, job.buildId))
       );
+      yield* updateCommitStatus("failure", "Clone failed");
       return yield* Effect.fail(new Error("Clone failed"));
     }
 
@@ -204,7 +239,33 @@ export const runBuild = (job: BuildJob) =>
           })
           .where(eq(builds.id, job.buildId))
       );
+      yield* updateCommitStatus("failure", "Build failed");
       return yield* Effect.fail(new Error(`Build failed: ${errMsg}`));
+    }
+
+    // After successful nixpacks build, push to GHCR
+    const pushProc = Bun.spawn(["docker", "push", job.imageTag], {
+      stderr: "pipe",
+      stdout: "pipe",
+    });
+
+    const pushExit = yield* Effect.promise(() => pushProc.exited);
+    if (pushExit !== 0) {
+      const errMsg = yield* Effect.promise(() =>
+        new Response(pushProc.stderr).text()
+      );
+      yield* Effect.promise(() =>
+        db
+          .update(builds)
+          .set({
+            errorMessage: `Push failed: ${errMsg}`,
+            finishedAt: new Date(),
+            status: "failed",
+          })
+          .where(eq(builds.id, job.buildId))
+      );
+      yield* updateCommitStatus("failure", "Push to registry failed");
+      return yield* Effect.fail(new Error(`Push failed: ${errMsg}`));
     }
 
     yield* Effect.promise(() =>
@@ -213,6 +274,7 @@ export const runBuild = (job: BuildJob) =>
         .set({ finishedAt: new Date(), status: "success" })
         .where(eq(builds.id, job.buildId))
     );
+    yield* updateCommitStatus("success", "Deployed successfully");
 
     // Deploy via Nomad
     yield* deployImage({
@@ -289,8 +351,8 @@ export const deployImage = (opts: DeployImageOptions) =>
 
     // Generate hostname
     const hostname = env.prNumber
-      ? `pr-${env.prNumber}-${service.name}.preview.yourdomain.com` // TODO: make domain configurable
-      : `${service.name}.yourdomain.com`;
+      ? `pr-${env.prNumber}-${service.name}.preview.${PLATFORM_DOMAIN}` // TODO: make domain configurable
+      : `${service.name}.${PLATFORM_DOMAIN}`;
 
     const evalId = yield* nomad.deployJob({
       count: service.instanceCount ?? 1,
@@ -305,12 +367,88 @@ export const deployImage = (opts: DeployImageOptions) =>
       traefikHostname: hostname,
     });
 
+    const nomadDeploymentId = yield* getDeploymentId(evalId);
+
     yield* Effect.promise(() =>
       db
         .update(deployments)
-        .set({ nomadEvalId: evalId })
+        .set({
+          nomadDeploymentId: nomadDeploymentId ?? undefined,
+          nomadEvalId: evalId,
+        })
         .where(eq(deployments.id, deployment.id))
     );
 
+    if (nomadDeploymentId) {
+      // Background — don't block deploy response
+      runtime
+        .runPromise(pollDeployment(deployment.id, nomadDeploymentId))
+        .catch(console.error);
+    }
+
     return { deploymentId: deployment.id, evalId, nomadJobId };
+  });
+
+// ─── Poll Nomad deployment (until success or failure) ──────────────────────────────────────────────────────
+
+export const pollDeployment = (
+  deploymentId: string,
+  nomadDeploymentId: string
+) =>
+  Effect.gen(function* () {
+    const nomad = yield* Nomad;
+
+    const poll = Effect.gen(function* () {
+      const status = yield* nomad.getDeploymentStatus(nomadDeploymentId);
+
+      if (status.status === "successful") {
+        yield* Effect.promise(() =>
+          db
+            .update(deployments)
+            .set({ finishedAt: new Date(), status: "success" })
+            .where(eq(deployments.id, deploymentId))
+        );
+        return true;
+      }
+
+      if (status.status === "failed" || status.status === "cancelled") {
+        yield* Effect.promise(() =>
+          db
+            .update(deployments)
+            .set({ finishedAt: new Date(), status: "failed" })
+            .where(eq(deployments.id, deploymentId))
+        );
+        return true;
+      }
+
+      return false;
+    });
+
+    // Poll every 5 seconds, max 20 times (100 seconds total)
+    let attempts = 0;
+    while (attempts < 20) {
+      const done = yield* poll;
+      if (done) {
+        break;
+      }
+      yield* Effect.sleep("5 seconds");
+      attempts++;
+    }
+  });
+
+// ─── Get Nomad deployment ID ──────────────────────────────────────────────────────
+
+const getDeploymentId = (evalId: string) =>
+  Effect.gen(function* () {
+    const nomad = yield* Nomad;
+    let attempts = 0;
+    while (attempts < 10) {
+      yield* Effect.sleep("2 seconds");
+      const evalStatus = yield* nomad.getEvalStatus(evalId);
+      if (evalStatus.deploymentId) {
+        return evalStatus.deploymentId;
+      }
+      attempts++;
+    }
+    return null;
   });

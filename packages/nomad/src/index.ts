@@ -84,6 +84,13 @@ function buildJobSpec(opts: NomadJobOptions): unknown {
               Config: {
                 args:
                   infisicalArgs.length > 1 ? infisicalArgs.slice(1) : undefined,
+                auth: [
+                  {
+                    password: process.env.GHCR_TOKEN ?? "",
+                    server_address: "ghcr.io",
+                    username: process.env.GHCR_USERNAME ?? "",
+                  },
+                ],
                 command:
                   infisicalArgs.length > 0 ? infisicalArgs[0] : undefined,
                 image: opts.image,
@@ -111,6 +118,14 @@ export interface NomadClient {
   getDeploymentStatus: (
     deploymentId: string
   ) => Effect.Effect<NomadDeployment, NomadError>;
+  getEvalStatus: (evalId: string) => Effect.Effect<
+    {
+      deploymentId?: string | undefined;
+      id: string;
+      status: string;
+    },
+    NomadError
+  >;
   getJobStatus: (jobId: string) => Effect.Effect<NomadJobStatus, NomadError>;
   listJobs: () => Effect.Effect<NomadJobSummary[], NomadError>;
   stopJob: (jobId: string, purge?: boolean) => Effect.Effect<void, NomadError>;
@@ -194,6 +209,20 @@ export const NomadLive = Layer.effect(
             description: d.StatusDescription,
             id: d.ID,
             status: d.Status as NomadDeployment["status"],
+          };
+        }),
+
+      getEvalStatus: (evalId) =>
+        Effect.gen(function* () {
+          const eval_ = yield* request<{
+            DeploymentID?: string;
+            ID: string;
+            Status: string;
+          }>("GET", `/evaluation/${evalId}`);
+          return {
+            deploymentId: eval_.DeploymentID,
+            id: eval_.ID,
+            status: eval_.Status,
           };
         }),
 

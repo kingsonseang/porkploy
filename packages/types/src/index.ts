@@ -80,6 +80,7 @@ export interface BuildJob {
   dockerfilePath?: string | undefined; // if present, skip nixpacks
   environmentId: string;
   imageTag: string; // target: ghcr.io/org/app:sha
+  installationId: number;
   repoCloneUrl: string;
   serviceId: string;
 }
